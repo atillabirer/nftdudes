@@ -28,7 +28,9 @@ contract NFTDudes is
 
     string private _baseTokenURI;
 
-    constructor() ERC721("NFTDudes", "NFTD") {
+    uint256 public salePrice = 50000000000000000;
+
+    constructor() ERC721("Coomiverse Game NFT", "COOMI") {
         _baseTokenURI = "ipfs://";
 
         _setupRole(MINTER_ROLE, msg.sender);
@@ -37,29 +39,48 @@ contract NFTDudes is
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    function safeMint(address player, string memory tokenURI)
+    function setPrice(uint256 price)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        returns (bool)
+    {
+        salePrice = price;
+        return true;
+    }
+
+    receive() external payable {
+        require(msg.value >= salePrice, "Not enough funds to purchase token");
+        uint256 tokenAmount = msg.value / salePrice;
+        for (uint256 i = 0; i < tokenAmount; ++i) {
+            _mint(msg.sender, _tokenIds.current());
+            _setTokenURI(_tokenIds.current(), "");
+
+            _tokenIds.increment();
+        }
+    }
+
+    function safeMint(address player, string memory URI)
         public
         onlyRole(MINTER_ROLE)
         returns (uint256)
     {
-
         uint256 newItemId = _tokenIds.current();
         _safeMint(player, newItemId);
-        _setTokenURI(newItemId, tokenURI);
+        _setTokenURI(newItemId, URI);
 
         _tokenIds.increment();
 
         return newItemId;
     }
 
-    function setTokenURI(uint256 tokenId, string memory tokenURI) public {
+    function setTokenURI(uint256 tokenId, string memory URI) public {
         //check if token belongs to user
         require(ownerOf(tokenId) == msg.sender, "You do not own this NFT");
-        _setTokenURI(tokenId, tokenURI);
+        _setTokenURI(tokenId, URI);
     }
 
     function addMinter(address newMinter) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        grantRole(PAUSER_ROLE, newMinter);
+        grantRole(MINTER_ROLE, newMinter);
     }
 
     //role management
@@ -73,6 +94,11 @@ contract NFTDudes is
 
     function removePauser(address pauser) public onlyRole(DEFAULT_ADMIN_ROLE) {
         revokeRole(PAUSER_ROLE, pauser);
+    }
+
+    function withdraw(address payable owner) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+        owner.transfer(address(this).balance);
+        return true;
     }
 
     function pause() public onlyRole(PAUSER_ROLE) {
@@ -115,7 +141,8 @@ contract NFTDudes is
     {
         return super.supportsInterface(interfaceId);
     }
-      function _baseURI() internal view virtual override returns (string memory) {
+
+    function _baseURI() internal view virtual override returns (string memory) {
         return _baseTokenURI;
     }
 }

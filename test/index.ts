@@ -16,9 +16,11 @@ describe("NFTDudes", function () {
     signers = await ethers.getSigners();
     let dudecontract = await ethers.getContractFactory("NFTDudes");
     DudeContract = await dudecontract.deploy();
+    await DudeContract.addMinter(signers[0].address)
     await DudeContract.deployed();
     otherDude = signers[1];
-    contractOtherDude  = DudeContract.connect(otherDude);
+    contractOtherDude  =  DudeContract.connect(otherDude);
+    console.log(signers[0].address,signers[1].address);
     
 
   });
@@ -51,32 +53,44 @@ describe("NFTDudes", function () {
     
   })
   //test pausable
-  it("Fails to transfer when paused, can when unpaused",async function() {
-    expect(DudeContract.pause()).to.emit(DudeContract,"Paused");
-    expect(DudeContract.safeMint(signers[0].address,"play")).to.be.revertedWith("ERC721Pausable: token transfer while paused");
-    expect(DudeContract.unpause()).to.emit(DudeContract,"Unpaused");
-    expect(DudeContract.safeMint(signers[0].address,"play")).to.emit(DudeContract,"Transfer");
+  // it("Fails to transfer when paused, can when unpaused",async function() {
+  //   expect(DudeContract.pause()).to.emit(DudeContract,"Paused");
+  //   expect(DudeContract.safeMint(signers[0].address,"play")).to.be.revertedWith("ERC721Pausable: token transfer while paused");
+  //   expect(DudeContract.unpause()).to.emit(DudeContract,"Unpaused");
+  //   expect(DudeContract.safeMint(signers[0].address,"play")).to.emit(DudeContract,"Transfer");
 
 
 
-  })
+  // })
   //test enumerable
-  it("Gets all NFTs for user",async function() {
-    const firstToken = await DudeContract.tokenByIndex(1);
-    expect(await DudeContract.tokenURI(firstToken)).to.equal("ipfs://play");
-  })
+  // it("Gets all NFTs for user",async function() {
+  //   const firstToken = await DudeContract.tokenByIndex(1);
+  //   console.log(firstToken)
+  //   expect(await DudeContract.tokenURI(firstToken)).to.equal("ipfs://play");
+  // })
   //roles
-  it("Make another person a minter and pauser",async function() {
-    //give minter and pauser to second signer (signers[1])
-    expect(DudeContract.addMinter(signers[1].address)).to.emit(DudeContract,"RoleGranted");
-    expect(contractOtherDude.safeMint(otherDude.address,"otherdudesnft")).to.emit(contractOtherDude,"Transfer");
+  // it("Make another person a minter and pauser",async function() {
+  //   //give minter and pauser to second signer (signers[1])
+  //   expect(DudeContract.addMinter(signers[1].address)).to.emit(DudeContract,"RoleGranted");
+  //   expect(contractOtherDude.safeMint(otherDude.address,"otherdudesnft")).to.emit(contractOtherDude,"Transfer");
 
-    expect(DudeContract.addPauser(signers[1].address)).to.emit(DudeContract,"Paused");
-    expect(contractOtherDude.safeMint(otherDude.address,"otherdudesnft")).to.be.revertedWith("Pausable: paused");
-
-    
+  //   expect(DudeContract.addPauser(signers[1].address)).to.emit(DudeContract,"Paused");
+  //   expect(contractOtherDude.safeMint(otherDude.address,"otherdudesnft")).to.be.revertedWith("Pausable: paused");
 
     
+
+    
+  // })
+  it("Sends 0.2 and gets 4 token",async function() {
+    console.log(await DudeContract.balanceOf(signers[0].address));
+    const tx = await signers[1].sendTransaction({
+      value: ethers.utils.parseEther("0.2"),
+      to: DudeContract.address
+      
+    })
+    tx.wait();
+    console.log(await DudeContract.balanceOf(signers[1].address));
+    expect(await DudeContract.balanceOf(signers[1].address)).to.equal(4);
   })
 
 
